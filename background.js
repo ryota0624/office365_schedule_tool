@@ -1,8 +1,10 @@
+function isCalendarUrl(url) {
+  return url.match(/GetCalendarView/);
+}
 chrome.webRequest.onCompleted.addListener((details) => {
-  if (details.url.match(/GetCalendarView/)) {
+  if (isCalendarUrl(details.url)) {
     chrome.cookies.getAll({}, (d)  => {
       const domains = d.filter(a => a.domain.match(/office365/));
-      console.log(domains)
     })
 
     chrome.tabs.executeScript(details.tabId, {
@@ -37,13 +39,7 @@ chrome.webRequest.onCompleted.addListener((details) => {
 );
 let headers = null;
 chrome.webRequest.onBeforeSendHeaders.addListener((details) => {
-  if (details.url.match(/GetCalendarView/)) {
+  if (isCalendarUrl(details.url)) {
     headers = details.requestHeaders.map(({name, value}) => ({[name]: value})).reduce((acc, ccc) => Object.assign({}, acc, ccc) , {});
   }
 },{urls: ['<all_urls>']}, ["requestHeaders"])
-
-
-chrome.webRequest.onBeforeSendHeaders.addListener(a, {urls: ['<all_urls>']}, ["requestHeaders"])
-function a(details) {
-  if (details.url.match(/GetCalendarView/)) console.log(details);
-}

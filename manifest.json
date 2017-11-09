@@ -3,7 +3,7 @@
   "name": "outlookの馬鹿野郎！！！！",
   "version": "0.0.0",
   "permissions": [
-    "*://*/*/",
+    "https://outlook.office365.com/*",
     "webRequest",
     "tabs",
     "cookies"
