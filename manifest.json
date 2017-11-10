@@ -4,13 +4,18 @@
   "version": "0.0.0",
   "permissions": [
     "https://outlook.office365.com/*",
+    "https://outlook.office.com/*",
     "webRequest",
     "tabs",
     "cookies"
   ],
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
   "background": {
     "scripts": [
-      "background.js"
+      "background.js",
+      "popup.js"
     ]
   },
   "content_scripts": [{
