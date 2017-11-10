@@ -4,21 +4,25 @@ function isCalendarUrl(url) {
 
 let taskStringStore = null;
 let headers = null;
+let lastUpdate = null;
 
 chrome.webRequest.onCompleted.addListener((details) => {
-  if (isCalendarUrl(details.url)) {
-    chrome.cookies.getAll({}, (d)  => {
-      const domains = d.filter(a => a.domain.match(/office365/));
-    })
-    
-    chrome.tabs.executeScript(details.tabId, {
-      code: `fetch("${details.url}&su=su",
-      {credentials: "include" ,method: "POST", headers: ${JSON.stringify(headers)} })
-        .then(res => res.json())
-        .then(json => {
-          chrome.runtime.sendMessage({json, type: "su-tasks"})
-        });`
-    })
+  if (lastUpdate === null || Date.now() > (lastUpdate + 60000)) {
+    if (isCalendarUrl(details.url)) {
+      lastUpdate = Date.now();
+      chrome.cookies.getAll({}, (d)  => {
+        const domains = d.filter(a => a.domain.match(/office365/));
+      });
+      
+      chrome.tabs.executeScript(details.tabId, {
+        code: `fetch("${details.url}&su=su",
+        {credentials: "include" ,method: "POST", headers: ${JSON.stringify(headers)} })
+          .then(res => res.json())
+          .then(json => {
+            chrome.runtime.sendMessage({json, type: "su-tasks"})
+          });`
+      });
+    }
   }
 },
   {urls: ['<all_urls>']},
