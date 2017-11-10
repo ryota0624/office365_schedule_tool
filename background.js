@@ -17,7 +17,15 @@ chrome.webRequest.onCompleted.addListener((details) => {
         .then(res => res.json())
         .then(json => {
           chrome.runtime.sendMessage({json, type: "su-tasks"})
-        });`
+          return null;
+        })
+        .then(() => fetch("${getUserAvailabilityInternal}&su=su", {credentials: "include" ,method: "POST", headers: ${userAvailabilityHeader()} }))
+        .then(res => res.json())
+        .then(json => {
+          chrome.runtime.sendMessage({json, type: "su-calendar"})
+          return null;
+        })
+        `
     })
   }
 },
@@ -41,6 +49,8 @@ function dateDuration(a, b) {
 chrome.runtime.onMessage.addListener(message => {  
   if (message.type === "su-tasks") {
     receiveTask(message.json.Body.Items);    
+  } else if (message.type === "su-calendar") {
+    receiveUserAvailabilityInternal(message.json)
   }
 });
 
@@ -56,4 +66,16 @@ function receiveTask(tasks) {
 function taskToString(t) { return t.date + ": " + t.subject + " " + (new Date(t.duration).getHours() - 9) + ":" + (new Date(t.duration)).getMinutes() };
 function getTaskStrings() {
   return taskStringStore;
+}
+
+const getUserAvailabilityInternal = "https://outlook.office.com/owa/service.svc?action=GetUserAvailabilityInternal&ID=-58&AC=1";
+
+function userAvailabilityHeader() {
+  const copyHeaders = JSON.parse(JSON.stringify(headers));
+  copyHeaders.action = "GetUserAvailabilityInternal";
+  copyHeaders["x-owa-actionname"] = "GetUserAvailabilityInternal";
+ return JSON.stringify(copyHeaders);
+}
+function receiveUserAvailabilityInternal(calendars) {
+  console.log(calendars)
 }
