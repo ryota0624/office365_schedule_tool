@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "outlookの馬鹿野郎！！！！",
+  "name": "SUZUKIのoutlookカレンダーいい感じにするやーつ",
   "version": "0.0.0",
   "permissions": [
     "https://outlook.office365.com/*",
@@ -15,7 +15,9 @@
   "background": {
     "scripts": [
       "background.js",
-      "popup.js"
+      "popup.js",
+      "library/inferno.min.js",
+      "library/inferno-create-element.min.js"
     ]
   },
   "content_scripts": [{

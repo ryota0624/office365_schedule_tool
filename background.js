@@ -1,8 +1,3 @@
-function isCalendarUrl(url) {
-  return url.match(/GetCalendarView/) && url.match(/su=su/) === null;
-}
-
-let taskStringStore = null;
 let headers = null;
 let lastUpdate = null;
 
@@ -34,30 +29,65 @@ chrome.webRequest.onBeforeSendHeaders.addListener((details) => {
   }
 },{urls: ['<all_urls>']}, ["requestHeaders"])
 
-function dateToSlashFormat(date) {
-  return (new Date(date)).getMonth() + "/" + (new Date(date)).getDate();
-}
-
-function dateDuration(a, b) {
-  return (new Date(a)).getTime() -  (new Date(b)).getTime();
-}
-
 chrome.runtime.onMessage.addListener(message => {  
   if (message.type === "su-tasks") {
     receiveTask(message.json.Body.Items);    
   }
 });
 
-function receiveTask(tasks) {
-  const taskStrings = tasks
+function receiveTask(rawTasks) {
+  function dateDuration(a, b) {
+    return (new Date(a)).getTime() - (new Date(b)).getTime();
+  }
+
+  function dateToSlashFormat(date) {
+    return (new Date(date)).getMonth() + "/" + (new Date(date)).getDate();
+  }
+  const tasks = rawTasks
   .map(({Start, End, Subject}) => ({ startTime: Start, endTime: End, subject: Subject }))
   .map(({subject, startTime, endTime}) => ({date: dateToSlashFormat(startTime), endTime, startTime, subject, duration: dateDuration(endTime, startTime)}))
-  .map(taskToString);
 
-  taskStringStore = taskStrings;
+  taskStore = tasks
+  kickChangeStoreCallbacks();
 }
 
-function taskToString(t) { return t.date + ": " + t.subject + " " + (new Date(t.duration).getHours() - 9) + ":" + (new Date(t.duration)).getMinutes() };
-function getTaskStrings() {
-  return taskStringStore;
+let taskStore = null;
+
+function isCalendarUrl(url) {
+  return url.match(/GetCalendarView/) && url.match(/su=su/) === null;
 }
+
+function groupByMonth() {
+  let taskMonthMap = {};
+  if (taskStore === null) return null; 
+  taskStore.forEach(task => {
+    const month = (new Date(task.startTime)).getMonth();
+    if (taskMonthMap[month] === undefined) {
+      Object.assign(taskMonthMap, {[month]: [] });
+    } else {
+      Object.assign(taskMonthMap, {[month]: taskMonthMap[month].concat(task) });
+    }
+  });
+  return taskMonthMap;
+}
+
+function getAllTasks() {
+  return taskStore;
+}
+
+function onChangeStore(callback) {
+  changeStoreCallbacks.push(callback);
+}
+
+function kickChangeStoreCallbacks() {
+  changeStoreCallbacks = changeStoreCallbacks.filter((cb) => {
+    if (cb) {
+      cb();
+      true;
+    } else {
+      false;
+    }
+  })
+}
+
+let changeStoreCallbacks = [];
