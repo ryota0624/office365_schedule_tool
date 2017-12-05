@@ -6,8 +6,14 @@ class ExcludedTextsLocalStorage {
   }
 
   get() {
-    const raw = window.localStorage.getItem("su-calendar-exluded-text").split("∩");
-    return raw.length === 1 && raw[0] === "" ? [] : raw;
+    const r = window.localStorage.getItem("su-calendar-exluded-text");
+    if (r) {
+      const raw = r.split("∩");
+      return raw.length === 1 && raw[0] === "" ? [] : raw;
+    } else {
+      return [];
+    }
+
   }
 }
 
