@@ -2,7 +2,8 @@ let headers = null;
 let lastUpdate = null;
 
 chrome.webRequest.onCompleted.addListener((details) => {
-  if (lastUpdate === null || Date.now() > (lastUpdate + 60000)) {
+  // if (lastUpdate === null || Date.now() > (lastUpdate + 60000)) {
+    console.log("start request")
     if (isCalendarUrl(details.url)) {
       lastUpdate = Date.now();
       chrome.cookies.getAll({}, (d)  => {
@@ -18,7 +19,7 @@ chrome.webRequest.onCompleted.addListener((details) => {
           });`
       });
     }
-  }
+  //}
 },
   {urls: ['<all_urls>']},
   []
@@ -41,7 +42,7 @@ function receiveTask(rawTasks) {
   }
 
   function dateToSlashFormat(date) {
-    return (new Date(date)).getMonth() + "/" + (new Date(date)).getDate();
+    return ((new Date(date)).getMonth() + 1) + "/" + (new Date(date)).getDate();
   }
   const tasks = rawTasks
   .map(({Start, End, Subject}) => ({ startTime: Start, endTime: End, subject: Subject }))
@@ -61,11 +62,11 @@ function groupByMonth() {
   let taskMonthMap = {};
   if (taskStore === null) return null; 
   taskStore.forEach(task => {
-    const month = (new Date(task.startTime)).getMonth();
-    if (taskMonthMap[month] === undefined) {
-      Object.assign(taskMonthMap, {[month]: [] });
+    const yearMonth = getDateYM((new Date(task.startTime)));
+    if (taskMonthMap[yearMonth] === undefined) {
+      Object.assign(taskMonthMap, {[yearMonth]: [] });
     } else {
-      Object.assign(taskMonthMap, {[month]: taskMonthMap[month].concat(task) });
+      Object.assign(taskMonthMap, {[yearMonth]: taskMonthMap[yearMonth].concat(task) });
     }
   });
   return taskMonthMap;
@@ -91,3 +92,10 @@ function kickChangeStoreCallbacks() {
 }
 
 let changeStoreCallbacks = [];
+
+function getDateYM(dt){
+  let y = dt.getFullYear();
+  let m = ("00" + (dt.getMonth()+1)).slice(-2);
+  var result = y + "/" + m;
+  return result;
+}

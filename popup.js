@@ -33,11 +33,14 @@ window.onload = () => {
   const p = _dom("p");
   const input = _dom("input");
   const a = _dom("a");
+  const form = _dom("form");
+  const label = _dom("label");
 
   class ParameterError extends Error {}
 
   class RootComponent extends Inferno.Component {
     constructor(props) {
+      const selectedDateYM = props.bgPage.getDateYM(new Date(Date.now()));
       super(props);
       const excludedTexts = props.excludedTextsLocalStorage.get();
       this.state = {
@@ -45,7 +48,8 @@ window.onload = () => {
         inputExcludeText: "",
         showList: false,
         excludeTextRegExp: new RegExp(excludedTexts.length > 0 ? excludedTexts.join("|") : "$."),
-        error: null
+        error: null,
+        selectedMonth: selectedDateYM
       }
     }
 
@@ -97,12 +101,18 @@ window.onload = () => {
     }
 
     render() {
+      const tasks = this.props.tasks[this.state.selectedMonth];
       if (this.state.error) {
         throw this.state.error;
       }
       return view({ 
-        tasks: this.props.tasks && this.props.tasks.filter(task => {
+        tasks: tasks && tasks.filter(task => {
           return !this.state.excludeTextRegExp.test(task.subject);
+        }),
+        monthSelectRadioButton: monthSelectRadioButton({monthKeys: Object.keys(this.props.tasks), selectedMonth: this.state.selectedMonth }, (e) => {
+          this.setState({
+            selectedMonth: e.target.value
+          });
         }),
         inputExcludeText: this.state.inputExcludeText,
         excludedTexts: this.state.excludedTexts,
@@ -128,27 +138,45 @@ window.onload = () => {
    */
   const bgPage = chrome.extension.getBackgroundPage()
   const tasks = bgPage.groupByMonth() || {};
+
+  console.log(Object.keys(tasks))
+
+  const allTasks = bgPage.getAllTasks();
+  if (allTasks) {
+    allTasks.forEach(task => {
+      console.log(task);
+    });
+  }
+
   const content = document.getElementById("content");
   const now = new Date(Date.now());
-  const targetTasks = tasks[now.getMonth()];
   if (content !== null) {
-    Inferno.render(Inferno.createElement(RootComponent, {tasks: targetTasks, excludedTextsLocalStorage: new ExcludedTextsLocalStorage()}), content);    
+    Inferno.render(Inferno.createElement(RootComponent, {bgPage, tasks: tasks, excludedTextsLocalStorage: new ExcludedTextsLocalStorage()}), content);    
   }
 
   bgPage.onChangeStore(() => {
     if (content !== null) {
-      Inferno.render(Inferno.createElement(RootComponent, {tasks: targetTasks, excludedTextsLocalStorage: new ExcludedTextsLocalStorage()}), content);    
+      Inferno.render(Inferno.createElement(RootComponent, {bgPage, tasks: tasks, excludedTextsLocalStorage: new ExcludedTextsLocalStorage()}), content);    
     }
   });
 
+  function monthSelectRadioButton({monthKeys, selectedMonth}, onClickButton) {
+    return form({name: "monthRadioButton"}, monthKeys.map(key => {
+      return label(null, [
+        input({type: "radio", name: "selectMonth", value: key, onClick: onClickButton, checked: selectedMonth === key}),
+        key
+      ]);
+    })
+    )
+  }
 
-  function view({tasks, inputExcludeText, excludedTexts, showList}, props) {
+  function view({tasks, inputExcludeText, excludedTexts, showList, monthSelectRadioButton}, props) {
     function taskView() {
       if (tasks === null || tasks === undefined) { 
         return div(null, ["please jump outlook page: ", a({href: "https://outlook.office.com/owa/?path=/calendar/view/Month"}, "https://outlook.office.com/owa/?path=/calendar/view/Month")]);
       }
       else { 
-        return tasksTableView(tasks);
+        return div(null, [monthSelectRadioButton, tasksTableView(tasks)]);
       }
     }
     
